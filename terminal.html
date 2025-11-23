@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSSH Manager - 在线SSH客户端</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/4.19.0/xterm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/4.19.0/xterm-addon-fit.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">
+                        <i class="fas fa-terminal"></i>
+                        <span>WebSSH Manager</span>
+                    </div>
+                    <nav class="nav">
+                        <a href="#" class="nav-link active" data-page="terminal">
+                            <i class="fas fa-desktop"></i> 终端
+                        </a>
+                        <a href="#" class="nav-link" data-page="connections">
+                            <i class="fas fa-server"></i> 连接管理
+                        </a>
+                        <a href="#" class="nav-link" data-page="settings">
+                            <i class="fas fa-cog"></i> 设置
+                        </a>
+                    </nav>
+                    <div class="user-menu">
+                        <span id="username">未登录</span>
+                        <button id="logout-btn" class="btn btn-sm">退出</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="container">
+                <!-- Login Page -->
+                <div id="login-page" class="page active">
+                    <div class="login-container">
+                        <div class="login-form">
+                            <h2>
+                                <i class="fas fa-terminal"></i>
+                                WebSSH Manager
+                            </h2>
+                            <p class="subtitle">安全的在线SSH客户端和服务器管理平台</p>
+                            
+                            <form id="login-form">
+                                <div class="form-group">
+                                    <label for="username">用户名/邮箱</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-user"></i>
+                                        <input type="text" id="username" name="username" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="password">密码</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-lock"></i>
+                                        <input type="password" id="password" name="password" required>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-sign-in-alt"></i> 登录
+                                </button>
+                            </form>
+                            
+                            <div class="login-footer">
+                                <p>还没有账号？ <a href="#" id="show-register">立即注册</a></p>
+                                <p>默认管理员账号: admin / admin123</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Register Page -->
+                <div id="register-page" class="page">
+                    <div class="login-container">
+                        <div class="login-form">
+                            <h2>
+                                <i class="fas fa-user-plus"></i>
+                                用户注册
+                            </h2>
+                            
+                            <form id="register-form">
+                                <div class="form-group">
+                                    <label for="reg-username">用户名</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-user"></i>
+                                        <input type="text" id="reg-username" name="username" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="reg-email">邮箱</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-envelope"></i>
+                                        <input type="email" id="reg-email" name="email" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="reg-password">密码</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-lock"></i>
+                                        <input type="password" id="reg-password" name="password" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="reg-phone">手机号（可选）</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-phone"></i>
+                                        <input type="tel" id="reg-phone" name="phone">
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-user-plus"></i> 注册
+                                </button>
+                            </form>
+                            
+                            <div class="login-footer">
+                                <p>已有账号？ <a href="#" id="show-login">返回登录</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal Page -->
+                <div id="terminal-page" class="page">
+                    <div class="terminal-layout">
+                        <div class="sidebar">
+                            <div class="sidebar-header">
+                                <h3>
+                                    <i class="fas fa-server"></i> 
+                                    SSH连接
+                                </h3>
+                                <button id="add-connection-btn" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-plus"></i> 添加
+                                </button>
+                            </div>
+                            <div class="connections-list" id="connections-list">
+                                <!-- Connections will be loaded here -->
+                            </div>
+                        </div>
+                        
+                        <div class="terminal-content">
+                            <div class="terminal-header">
+                                <div class="terminal-info">
+                                    <span id="current-connection">未连接</span>
+                                    <span id="connection-status" class="status disconnected"></span>
+                                </div>
+                                <div class="terminal-controls">
+                                    <button id="connect-btn" class="btn btn-sm btn-success" disabled>
+                                        <i class="fas fa-plug"></i> 连接
+                                    </button>
+                                    <button id="disconnect-btn" class="btn btn-sm btn-danger" disabled>
+                                        <i class="fas fa-power-off"></i> 断开
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="terminal" class="terminal-wrapper"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connections Management Page -->
+                <div id="connections-page" class="page">
+                    <div class="page-header">
+                        <h2>
+                            <i class="fas fa-server"></i> 连接管理
+                        </h2>
+                        <button id="new-connection-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> 新建连接
+                        </button>
+                    </div>
+                    
+                    <div class="connections-grid" id="connections-grid">
+                        <!-- Connection cards will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="settings-page" class="page">
+                    <div class="page-header">
+                        <h2>
+                            <i class="fas fa-cog"></i> 设置
+                        </h2>
+                    </div>
+                    
+                    <div class="settings-container">
+                        <div class="settings-section">
+                            <h3>用户信息</h3>
+                            <div class="user-info">
+                                <p><strong>用户名:</strong> <span id="user-username">-</span></p>
+                                <p><strong>邮箱:</strong> <span id="user-email">-</span></p>
+                                <p><strong>注册时间:</strong> <span id="user-created">-</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h3>修改密码</h3>
+                            <form id="change-password-form">
+                                <div class="form-group">
+                                    <label for="current-password">当前密码</label>
+                                    <input type="password" id="current-password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-password">新密码</label>
+                                    <input type="password" id="new-password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm-password">确认新密码</label>
+                                    <input type="password" id="confirm-password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">修改密码</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Connection Modal -->
+    <div id="connection-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">添加SSH连接</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="connection-form">
+                    <input type="hidden" id="connection-id">
+                    
+                    <div class="form-group">
+                        <label for="conn-name">连接名称 *</label>
+                        <input type="text" id="conn-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="conn-host">主机地址 *</label>
+                        <input type="text" id="conn-host" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="conn-port">端口</label>
+                            <input type="number" id="conn-port" value="22" min="1" max="65535">
+                        </div>
+                        <div class="form-group">
+                            <label for="conn-username">用户名 *</label>
+                            <input type="text" id="conn-username" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="conn-auth-type">认证方式 *</label>
+                        <select id="conn-auth-type" required>
+                            <option value="password">密码认证</option>
+                            <option value="key">密钥认证</option>
+                        </select>
+                    </div>
+                    
+                    <div id="password-auth" class="auth-section">
+                        <div class="form-group">
+                            <label for="conn-password">密码 *</label>
+                            <input type="password" id="conn-password">
+                        </div>
+                    </div>
+                    
+                    <div id="key-auth" class="auth-section" style="display: none;">
+                        <div class="form-group">
+                            <label for="conn-private-key">私钥 *</label>
+                            <textarea id="conn-private-key" rows="8" placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="conn-passphrase">密钥密码（如果有）</label>
+                            <input type="password" id="conn-passphrase">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="conn-description">描述</label>
+                        <textarea id="conn-description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="test-connection-btn">
+                            <i class="fas fa-plug"></i> 测试连接
+                        </button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
